@@ -1,2 +1,0 @@
-# score-system
-score-system 

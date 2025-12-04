@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกคะแนนเกม</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 บันทึกคะแนนเกม</h1>
+            <p class="subtitle">4 ทีม (ทีมละ 10-15 คน) × 3 เกม</p>
+            <button id="edit-names-btn" class="edit-names-btn">✏️ กรอก/แก้ไขชื่อเล่น</button>
+        </header>
+
+        <!-- Player Names Setup Modal -->
+        <div id="player-names-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>กรอก/แก้ไขชื่อเล่นของสมาชิกแต่ละทีม</h2>
+                    <button id="close-modal-btn" class="close-modal-btn">×</button>
+                </div>
+                <p class="modal-subtitle">กรอกชื่อเล่นของสมาชิกแต่ละทีม (กรอกเฉพาะคนที่จะเล่น)</p>
+                <div id="player-names-container" class="player-names-container">
+                    <!-- Player names input will be generated here -->
+                </div>
+                <div class="modal-buttons">
+                    <button id="save-names-btn" class="submit-btn">บันทึกชื่อเล่น</button>
+                    <button id="cancel-names-btn" class="cancel-btn">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scoreboard -->
+        <section class="scoreboard">
+            <h2>📊 Scoreboard - คะแนนรวมทั้ง 3 เกม</h2>
+            <div id="leader-indicator" class="leader-indicator"></div>
+            <div id="teams-display" class="teams-display">
+                <!-- Teams will be dynamically sorted and displayed here -->
+            </div>
+        </section>
+
+        <!-- Game Summary -->
+        <section class="game-summary-section">
+            <h2>📈 สรุปคะแนนแต่ละเกม</h2>
+            <div id="game-summary" class="game-summary-container">
+                <!-- Game summaries will be displayed here -->
+            </div>
+        </section>
+
+        <!-- Team Selector for Score Input -->
+        <section class="team-selector-section">
+            <div class="team-selector-card">
+                <h3>เลือกทีมของคุณ (คนคุม)</h3>
+                <div class="team-buttons">
+                    <button class="team-select-btn" data-team="0">ทีม 1</button>
+                    <button class="team-select-btn" data-team="1">ทีม 2</button>
+                    <button class="team-select-btn" data-team="2">ทีม 3</button>
+                    <button class="team-select-btn" data-team="3">ทีม 4</button>
+                </div>
+                <div id="selected-team-indicator" class="selected-team-indicator"></div>
+            </div>
+        </section>
+
+        <!-- Score Input Section -->
+        <section class="input-section" id="score-input-section" style="display: none;">
+            <div class="game-selector">
+                <label for="game-select">เกมที่:</label>
+                <select id="game-select">
+                    <option value="0">เกมที่ 1 (แต่ละคนสูงสุด: 4)</option>
+                    <option value="1">เกมที่ 2 (แต่ละคนสูงสุด: 12)</option>
+                    <option value="2">เกมที่ 3 (แต่ละคนสูงสุด: 9)</option>
+                </select>
+                <div class="game-max-score-info">
+                    <span id="current-game-max-score">เกมนี้แต่ละคนสูงสุด: 4 คะแนน</span>
+                    <span class="total-max-info">รวมทั้ง 3 เกม: 25 คะแนน (ทีม)</span>
+                </div>
+            </div>
+
+            <div class="score-inputs">
+                <h3 id="current-team-title">กรอกคะแนนเดี่ยว (คะแนนทีมจะคำนวณอัตโนมัติ)</h3>
+                <div id="teams-input-container" class="teams-input-container">
+                    <!-- Teams input will be dynamically generated here -->
+                </div>
+                <button id="submit-scores" class="submit-btn">บันทึกคะแนน</button>
+            </div>
+        </section>
+
+        <!-- Score History -->
+        <section class="history-section">
+            <h2>📝 ประวัติคะแนน</h2>
+            <div id="score-history" class="history-container"></div>
+        </section>
+
+        <!-- Reset Button -->
+        <button id="reset-btn" class="reset-btn">รีเซ็ตทั้งหมด</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
