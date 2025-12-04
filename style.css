@@ -176,9 +176,11 @@ header h1 {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 20px;
     padding: 5px;
+    max-width: 1300px;
+    margin: 0 auto;
 }
 
 .teams-display::before {
@@ -213,7 +215,7 @@ header h1 {
     background: linear-gradient(180deg, #ffffff 0%, #f8f9ff 100%);
     border: none;
     border-radius: 22px;
-    padding: 22px 22px 26px;
+    padding: 20px 20px 24px;
     color: #1d2235;
     box-shadow: 0 18px 40px rgba(45, 55, 72, 0.15);
     position: relative;
@@ -221,7 +223,7 @@ header h1 {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    min-height: 360px;
+    min-height: 320px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     isolation: isolate;
 }
@@ -294,9 +296,8 @@ header h1 {
 }
 
 @media (min-width: 992px) {
-    .team-card.rank-1 {
-        grid-column: span 2;
-        min-height: 420px;
+    .teams-display {
+        grid-template-columns: repeat(2, minmax(320px, 1fr));
     }
 }
 
@@ -1290,11 +1291,18 @@ header h1 {
 
 .history-scores {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 16px;
+    align-items: stretch;
 }
 
 @media (max-width: 768px) {
+    .history-scores {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
     .history-scores {
         grid-template-columns: 1fr;
     }
@@ -1415,6 +1423,10 @@ header h1 {
         position: relative;
         top: auto;
         right: auto;
+    }
+
+    .teams-display {
+        grid-template-columns: 1fr;
     }
 
     .leader-indicator {
