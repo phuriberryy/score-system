@@ -58,10 +58,10 @@
             <div class="team-selector-card">
                 <h3>เลือกทีมของคุณ (คนคุม)</h3>
                 <div class="team-buttons">
-                    <button class="team-select-btn" data-team="0">ทีม 1</button>
-                    <button class="team-select-btn" data-team="1">ทีม 2</button>
-                    <button class="team-select-btn" data-team="2">ทีม 3</button>
-                    <button class="team-select-btn" data-team="3">ทีม 4</button>
+                    <button class="team-select-btn" data-team="0"><span class="team-btn-label">ทีม 1</span></button>
+                    <button class="team-select-btn" data-team="1"><span class="team-btn-label">ทีม 2</span></button>
+                    <button class="team-select-btn" data-team="2"><span class="team-btn-label">ทีม 3</span></button>
+                    <button class="team-select-btn" data-team="3"><span class="team-btn-label">ทีม 4</span></button>
                 </div>
                 <div id="selected-team-indicator" class="selected-team-indicator"></div>
             </div>
@@ -70,15 +70,14 @@
         <!-- Score Input Section -->
         <section class="input-section" id="score-input-section" style="display: none;">
             <div class="game-selector">
-                <label for="game-select">เกมที่:</label>
+                <label for="game-select">เลือกเกม:</label>
                 <select id="game-select">
-                    <option value="0">เกมที่ 1 (แต่ละคนสูงสุด: 4)</option>
-                    <option value="1">เกมที่ 2 (แต่ละคนสูงสุด: 12)</option>
-                    <option value="2">เกมที่ 3 (แต่ละคนสูงสุด: 9)</option>
+                    <option value="0">เกมที่ 1</option>
+                    <option value="1">เกมที่ 2</option>
+                    <option value="2">เกมที่ 3</option>
                 </select>
                 <div class="game-max-score-info">
-                    <span id="current-game-max-score">เกมนี้แต่ละคนสูงสุด: 4 คะแนน</span>
-                    <span class="total-max-info">รวมทั้ง 3 เกม: 25 คะแนน (ทีม)</span>
+                    <span id="current-game-max-score">กำลังกรอกคะแนน: เกมที่ 1</span>
                 </div>
             </div>
 
