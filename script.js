@@ -31,6 +31,10 @@ let playerTotalScores = Array(NUM_TEAMS).fill(null).map(() =>
     Array(NUM_PLAYERS_PER_TEAM).fill(0)
 );
 
+// History of submissions (kept until manual reset)
+// Each item: { game: number, teamPlayerScores: number[][], timestamp: number }
+let historyData = [];
+
 // Check if player names are set
 let playerNamesSet = false;
 
@@ -417,8 +421,8 @@ function updateGameSummary() {
     }
 }
 
-// Add score to history
-function addToHistory(game, teamPlayerScores) {
+// Internal: render a single history item to the DOM
+function renderHistoryItem(game, teamPlayerScores) {
     const historyItem = document.createElement('div');
     historyItem.className = 'history-item';
     
@@ -477,9 +481,19 @@ function addToHistory(game, teamPlayerScores) {
     historyContainer.insertBefore(historyItem, historyContainer.firstChild);
 }
 
+// Add score to history (and keep in memory)
+function addToHistory(game, teamPlayerScores) {
+    historyData.push({
+        game,
+        teamPlayerScores,
+        timestamp: Date.now()
+    });
+    renderHistoryItem(game, teamPlayerScores);
+}
+
 // Load existing scores for current game
 function loadCurrentScores() {
-    if (!playerNamesSet || currentSelectedTeam === null) {
+    if (!playerNamesSet) {
         return;
     }
     
@@ -585,10 +599,14 @@ submitBtn.addEventListener('click', () => {
         }
     }
     
-    // Get individual player scores from inputs (only for players with names)
-    const teamPlayerScores = [];
-    for (let teamIndex = 0; teamIndex < NUM_TEAMS; teamIndex++) {
-        const teamScores = Array(NUM_PLAYERS_PER_TEAM).fill(0);
+    // Prepare scores update: start from existing scores to avoid clearing other teams
+    const teamPlayerScores = scores[game].map(teamScores => [...teamScores]);
+    
+    if (currentSelectedTeam !== null) {
+        // Update only the selected team; keep others as-is
+        const teamIndex = currentSelectedTeam;
+        const teamScores = [...scores[game][teamIndex]];
+        
         for (let playerIndex = 0; playerIndex < NUM_PLAYERS_PER_TEAM; playerIndex++) {
             if (playerNames[teamIndex][playerIndex] && playerNames[teamIndex][playerIndex].trim() !== '') {
                 const input = document.getElementById(`team-${teamIndex}-player-${playerIndex}`);
@@ -598,7 +616,22 @@ submitBtn.addEventListener('click', () => {
                 }
             }
         }
-        teamPlayerScores.push(teamScores);
+        teamPlayerScores[teamIndex] = teamScores;
+    } else {
+        // Admin view: update all visible teams (all inputs exist)
+        for (let teamIndex = 0; teamIndex < NUM_TEAMS; teamIndex++) {
+            const teamScores = [...scores[game][teamIndex]];
+            for (let playerIndex = 0; playerIndex < NUM_PLAYERS_PER_TEAM; playerIndex++) {
+                if (playerNames[teamIndex][playerIndex] && playerNames[teamIndex][playerIndex].trim() !== '') {
+                    const input = document.getElementById(`team-${teamIndex}-player-${playerIndex}`);
+                    if (input) {
+                        const value = parseInt(input.value) || 0;
+                        teamScores[playerIndex] = Math.max(0, value); // Ensure non-negative
+                    }
+                }
+            }
+            teamPlayerScores[teamIndex] = teamScores;
+        }
     }
     
     // Check if scores are already entered
@@ -623,13 +656,7 @@ submitBtn.addEventListener('click', () => {
         }
         calculateTotalScores();
         
-        // Update history (remove old entry and add new one)
-        const historyItems = historyContainer.querySelectorAll('.history-item');
-        historyItems.forEach(item => {
-            if (item.querySelector('.history-item-header').textContent.includes(`เกมที่ ${game + 1}`)) {
-                item.remove();
-            }
-        });
+        // Keepประวัติทุกรอบ ไม่ลบของเก่า
         addToHistory(game, teamPlayerScores);
     } else {
         // Save new scores
@@ -647,6 +674,7 @@ submitBtn.addEventListener('click', () => {
     
     // Clear inputs
     initializeTeamInputs();
+    loadCurrentScores(); // Refill inputs (selected team or all teams) with saved scores so they stay visible
     
     // Show success message
     submitBtn.textContent = '✓ บันทึกสำเร็จ!';
@@ -722,6 +750,7 @@ saveNamesBtn.addEventListener('click', () => {
 // Reset all scores
 resetBtn.addEventListener('click', () => {
     if (confirm('คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตคะแนนทั้งหมด?')) {
+        // Reset in-memory data
         scores = Array(NUM_GAMES).fill(null).map(() => 
             Array(NUM_TEAMS).fill(null).map(() => 
                 Array(NUM_PLAYERS_PER_TEAM).fill(0)
@@ -732,9 +761,25 @@ resetBtn.addEventListener('click', () => {
             Array(NUM_PLAYERS_PER_TEAM).fill(0)
         );
         gameScores = Array(NUM_GAMES).fill(null).map(() => [0, 0, 0, 0]);
+        
+        // Reset history data and UI
+        historyData = [];
         calculateTotalScores();
         historyContainer.innerHTML = '';
         loadCurrentScores();
+        updateGameSummary();
+        updateScoreDisplay();
+        
+        // Reset Firebase
+        if (firebaseInitialized && typeof database !== 'undefined') {
+            database.ref('scores').remove();
+        }
+        // Reset localStorage
+        localStorage.removeItem('gameScores');
+        localStorage.removeItem('totalScores');
+        localStorage.removeItem('playerTotalScores');
+        localStorage.removeItem('gameScoresData');
+        localStorage.removeItem('historyData');
     }
 });
 
@@ -882,10 +927,12 @@ function initFirebaseSync() {
             totalScores = data.totalScores || totalScores;
             gameScores = data.gameScores || gameScores;
             playerTotalScores = data.playerTotalScores || playerTotalScores;
+            historyData = data.historyData || historyData;
             
             calculateTotalScores();
             updateScoreDisplay();
             updateGameSummary();
+            rebuildHistory();
             
             // Reload current scores if not typing
             if (currentSelectedTeam !== null && Object.keys(currentInputValues).length === 0) {
@@ -901,7 +948,6 @@ function initFirebaseSync() {
                 });
             }
             
-            rebuildHistory();
             updateSyncStatus('synced');
         }
     }, (error) => {
@@ -940,6 +986,7 @@ function saveToFirebase() {
         totalScores: totalScores,
         gameScores: gameScores,
         playerTotalScores: playerTotalScores,
+        historyData: historyData,
         lastUpdated: Date.now()
     };
     
@@ -989,6 +1036,7 @@ function loadFromFirebase() {
             totalScores = data.totalScores || totalScores;
             gameScores = data.gameScores || gameScores;
             playerTotalScores = data.playerTotalScores || playerTotalScores;
+            historyData = data.historyData || historyData;
             calculateTotalScores();
             updateScoreDisplay();
             updateGameSummary();
@@ -1097,6 +1145,7 @@ function saveToLocalStorage() {
     localStorage.setItem('playerTotalScores', JSON.stringify(playerTotalScores));
     localStorage.setItem('playerNames', JSON.stringify(playerNames));
     localStorage.setItem('gameScoresData', JSON.stringify(gameScores));
+    localStorage.setItem('historyData', JSON.stringify(historyData));
 }
 
 function loadFromLocalStorage() {
@@ -1107,6 +1156,7 @@ function loadFromLocalStorage() {
     const savedTotalScores = localStorage.getItem('totalScores');
     const savedPlayerTotalScores = localStorage.getItem('playerTotalScores');
     const savedGameScores = localStorage.getItem('gameScoresData');
+    const savedHistoryData = localStorage.getItem('historyData');
     
     if (savedScores) {
         scores = JSON.parse(savedScores);
@@ -1120,6 +1170,13 @@ function loadFromLocalStorage() {
     if (savedGameScores) {
         gameScores = JSON.parse(savedGameScores);
     }
+    if (savedHistoryData) {
+        try {
+            historyData = JSON.parse(savedHistoryData);
+        } catch (e) {
+            historyData = [];
+        }
+    }
     
     // Only load player names if modal is not open
     if (!isModalOpen) {
@@ -1130,6 +1187,7 @@ function loadFromLocalStorage() {
     }
     
     calculateTotalScores();
+    rebuildHistory();
 }
 
 // Save on every score submission
@@ -1145,20 +1203,6 @@ saveNamesBtn.addEventListener('click', () => {
     setTimeout(() => {
         saveNamesToFirebase();
     }, 100);
-});
-
-resetBtn.addEventListener('click', () => {
-    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตคะแนนทั้งหมด?')) {
-        // Reset Firebase
-        if (firebaseInitialized && typeof database !== 'undefined') {
-            database.ref('scores').remove();
-        }
-        // Reset localStorage
-        localStorage.removeItem('gameScores');
-        localStorage.removeItem('totalScores');
-        localStorage.removeItem('playerTotalScores');
-        localStorage.removeItem('gameScoresData');
-    }
 });
 
 // Initialize Firebase sync after DOM is ready
@@ -1182,11 +1226,14 @@ loadFromLocalStorage();
 // Rebuild history from saved scores
 function rebuildHistory() {
     historyContainer.innerHTML = '';
-    for (let game = NUM_GAMES - 1; game >= 0; game--) {
-        if (scores[game].some(teamScores => teamScores.some(score => score > 0))) {
-            addToHistory(game, scores[game]);
-        }
+    if (!historyData || historyData.length === 0) {
+        return;
     }
+    // แสดงรายการล่าสุดไว้บนสุด
+    const sortedHistory = [...historyData].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    sortedHistory.forEach(entry => {
+        renderHistoryItem(entry.game, entry.teamPlayerScores);
+    });
 }
 
 // Rebuild history if there's saved data
