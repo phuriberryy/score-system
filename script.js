@@ -707,6 +707,7 @@ saveNamesBtn.addEventListener('click', () => {
     playerNamesSet = true;
     playerNamesModal.style.display = 'none';
     saveToLocalStorage();
+    saveNamesToFirebase(); // Sync to Firebase
     
     // If team is already selected, initialize inputs
     if (currentSelectedTeam !== null) {
@@ -799,7 +800,230 @@ function isUserTyping() {
     return activeElement && activeElement.classList.contains('player-score-input');
 }
 
-// Auto-sync data from localStorage (for sharing between devices)
+// Firebase Realtime Sync Functions
+let firebaseInitialized = false;
+let syncEnabled = true;
+
+// Sync status indicator
+const syncStatusEl = document.getElementById('sync-status');
+const syncIndicatorEl = document.getElementById('sync-indicator');
+const syncTextEl = document.getElementById('sync-text');
+
+function updateSyncStatus(status) {
+    if (!syncStatusEl) return;
+    
+    syncStatusEl.style.display = 'inline-flex';
+    syncStatusEl.className = 'sync-status';
+    
+    switch(status) {
+        case 'syncing':
+            syncIndicatorEl.textContent = '🔄';
+            syncTextEl.textContent = 'กำลัง sync...';
+            break;
+        case 'synced':
+            syncStatusEl.classList.add('synced');
+            syncIndicatorEl.textContent = '✅';
+            syncTextEl.textContent = 'Sync สำเร็จ';
+            setTimeout(() => {
+                syncStatusEl.style.display = 'none';
+            }, 2000);
+            break;
+        case 'error':
+            syncStatusEl.classList.add('error');
+            syncIndicatorEl.textContent = '❌';
+            syncTextEl.textContent = 'Sync ไม่สำเร็จ (ใช้ localStorage)';
+            break;
+        case 'offline':
+            syncStatusEl.classList.add('error');
+            syncIndicatorEl.textContent = '📴';
+            syncTextEl.textContent = 'ออฟไลน์ (ใช้ localStorage)';
+            break;
+    }
+}
+
+// Initialize Firebase sync
+function initFirebaseSync() {
+    if (typeof firebase === 'undefined' || typeof database === 'undefined' || !database) {
+        console.warn('Firebase not initialized, using localStorage only');
+        updateSyncStatus('offline');
+        return;
+    }
+    
+    firebaseInitialized = true;
+    updateSyncStatus('syncing');
+    
+    // Listen for real-time changes
+    const scoresRef = database.ref('scores');
+    const namesRef = database.ref('playerNames');
+    
+    // Listen to scores changes
+    scoresRef.on('value', (snapshot) => {
+        if (!syncEnabled) return;
+        
+        updateSyncStatus('syncing');
+        const data = snapshot.val();
+        if (data) {
+            // Don't sync if modal is open or user is typing
+            if (playerNamesModal && playerNamesModal.style.display === 'flex') return;
+            if (isUserTyping()) return;
+            
+            // Save current input values before syncing
+            const currentInputValues = {};
+            document.querySelectorAll('.player-score-input').forEach(input => {
+                const teamIndex = input.getAttribute('data-team');
+                const playerIndex = input.getAttribute('data-player');
+                if (teamIndex !== null && playerIndex !== null && input.value !== '') {
+                    const key = `${teamIndex}-${playerIndex}`;
+                    currentInputValues[key] = input.value;
+                }
+            });
+            
+            scores = data.scores || scores;
+            totalScores = data.totalScores || totalScores;
+            gameScores = data.gameScores || gameScores;
+            playerTotalScores = data.playerTotalScores || playerTotalScores;
+            
+            calculateTotalScores();
+            updateScoreDisplay();
+            updateGameSummary();
+            
+            // Reload current scores if not typing
+            if (currentSelectedTeam !== null && Object.keys(currentInputValues).length === 0) {
+                loadCurrentScores();
+            } else {
+                // Restore user input values
+                Object.keys(currentInputValues).forEach(key => {
+                    const [teamIndex, playerIndex] = key.split('-');
+                    const input = document.getElementById(`team-${teamIndex}-player-${playerIndex}`);
+                    if (input) {
+                        input.value = currentInputValues[key];
+                    }
+                });
+            }
+            
+            rebuildHistory();
+            updateSyncStatus('synced');
+        }
+    }, (error) => {
+        console.error('Firebase sync error:', error);
+        updateSyncStatus('error');
+    });
+    
+    // Listen to player names changes
+    namesRef.on('value', (snapshot) => {
+        if (!syncEnabled) return;
+        
+        const data = snapshot.val();
+        if (data && playerNamesModal && playerNamesModal.style.display !== 'flex') {
+            playerNames = data;
+            playerNamesSet = true;
+            if (currentSelectedTeam !== null) {
+                initializeTeamInputs();
+                loadCurrentScores();
+            }
+            updateScoreDisplay();
+        }
+    });
+}
+
+// Save to Firebase
+function saveToFirebase() {
+    if (!firebaseInitialized || typeof database === 'undefined') {
+        saveToLocalStorage(); // Fallback to localStorage
+        return;
+    }
+    
+    syncEnabled = false; // Prevent sync loop
+    
+    const data = {
+        scores: scores,
+        totalScores: totalScores,
+        gameScores: gameScores,
+        playerTotalScores: playerTotalScores,
+        lastUpdated: Date.now()
+    };
+    
+    database.ref('scores').set(data).then(() => {
+        syncEnabled = true;
+        updateSyncStatus('synced');
+        // Also save to localStorage as backup
+        saveToLocalStorage();
+    }).catch((error) => {
+        console.error('Firebase save error:', error);
+        syncEnabled = true;
+        updateSyncStatus('error');
+        saveToLocalStorage(); // Fallback
+    });
+}
+
+// Save player names to Firebase
+function saveNamesToFirebase() {
+    if (!firebaseInitialized || typeof database === 'undefined') {
+        saveToLocalStorage();
+        return;
+    }
+    
+    syncEnabled = false;
+    
+    database.ref('playerNames').set(playerNames).then(() => {
+        syncEnabled = true;
+        saveToLocalStorage();
+    }).catch((error) => {
+        console.error('Firebase save error:', error);
+        syncEnabled = true;
+        saveToLocalStorage();
+    });
+}
+
+// Load from Firebase on startup
+function loadFromFirebase() {
+    if (!firebaseInitialized || typeof database === 'undefined') {
+        loadFromLocalStorage();
+        return;
+    }
+    
+    database.ref('scores').once('value').then((snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            scores = data.scores || scores;
+            totalScores = data.totalScores || totalScores;
+            gameScores = data.gameScores || gameScores;
+            playerTotalScores = data.playerTotalScores || playerTotalScores;
+            calculateTotalScores();
+            updateScoreDisplay();
+            updateGameSummary();
+            rebuildHistory();
+        } else {
+            loadFromLocalStorage(); // Fallback
+        }
+    }).catch(() => {
+        loadFromLocalStorage(); // Fallback
+    });
+    
+    database.ref('playerNames').once('value').then((snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            playerNames = data;
+            playerNamesSet = true;
+            playerNamesModal.style.display = 'none';
+            if (currentSelectedTeam !== null) {
+                initializeTeamInputs();
+                loadCurrentScores();
+            }
+        } else {
+            const savedNames = localStorage.getItem('playerNames');
+            if (savedNames) {
+                playerNames = JSON.parse(savedNames);
+                playerNamesSet = true;
+                playerNamesModal.style.display = 'none';
+            }
+        }
+    }).catch(() => {
+        loadFromLocalStorage();
+    });
+}
+
+// Auto-sync data from localStorage (fallback for same browser tabs)
 function syncData() {
     // Don't sync if modal is open (user is editing names)
     if (playerNamesModal && playerNamesModal.style.display === 'flex') {
@@ -811,38 +1035,26 @@ function syncData() {
         return;
     }
     
-    // Save current input values before syncing
-    const currentInputValues = {};
-    document.querySelectorAll('.player-score-input').forEach(input => {
-        const teamIndex = input.getAttribute('data-team');
-        const playerIndex = input.getAttribute('data-player');
-        if (teamIndex !== null && playerIndex !== null) {
-            const key = `${teamIndex}-${playerIndex}`;
-            currentInputValues[key] = input.value;
-        }
-    });
+    // If Firebase is initialized, it handles sync automatically
+    if (firebaseInitialized) {
+        return;
+    }
     
-    // Check if user has entered any values
-    const hasInputValues = Array.from(document.querySelectorAll('.player-score-input')).some(input => {
-        const val = input.value.trim();
-        return val !== '' && val !== '0';
-    });
-    
+    // Fallback: use localStorage sync for same browser tabs
     loadFromLocalStorage();
     if (playerNamesSet) {
         updateScoreDisplay();
         updateGameSummary();
-        // Don't reload inputs if user has entered values - just update display
-        if (currentSelectedTeam !== null && !hasInputValues) {
-            // Only reload if no values are being entered
+        if (currentSelectedTeam !== null) {
             loadCurrentScores();
         }
-        // If has values, don't reload - keep what user typed
     }
 }
 
-// Check for data changes every 2 seconds
-setInterval(syncData, 2000);
+// Check for data changes every 2 seconds (fallback only)
+if (!firebaseInitialized) {
+    setInterval(syncData, 2000);
+}
 
 // Also listen to storage events (for same browser, different tabs)
 window.addEventListener('storage', (e) => {
@@ -853,11 +1065,17 @@ window.addEventListener('storage', (e) => {
 
 // Initialize
 initializePlayerNamesInput();
+
+// Check for saved names (will be loaded by Firebase or localStorage)
 const savedNames = localStorage.getItem('playerNames');
 if (savedNames) {
-    playerNames = JSON.parse(savedNames);
-    playerNamesSet = true;
-    playerNamesModal.style.display = 'none';
+    try {
+        playerNames = JSON.parse(savedNames);
+        playerNamesSet = true;
+        playerNamesModal.style.display = 'none';
+    } catch (e) {
+        playerNamesModal.style.display = 'flex';
+    }
 } else {
     playerNamesModal.style.display = 'flex';
 }
@@ -872,7 +1090,7 @@ if (playerNamesSet) {
     loadCurrentScores();
 }
 
-// Auto-save to localStorage
+// Auto-save to localStorage (backup)
 function saveToLocalStorage() {
     localStorage.setItem('gameScores', JSON.stringify(scores));
     localStorage.setItem('totalScores', JSON.stringify(totalScores));
@@ -915,15 +1133,50 @@ function loadFromLocalStorage() {
 }
 
 // Save on every score submission
-submitBtn.addEventListener('click', saveToLocalStorage);
-resetBtn.addEventListener('click', () => {
-    localStorage.removeItem('gameScores');
-    localStorage.removeItem('totalScores');
-    localStorage.removeItem('playerTotalScores');
-    localStorage.removeItem('gameScoresData');
+submitBtn.addEventListener('click', () => {
+    saveToFirebase();
+    saveToLocalStorage(); // Backup
 });
 
-// Load on page load
+// Save names when saved
+saveNamesBtn.addEventListener('click', () => {
+    // This is already handled in the existing saveNamesBtn event listener
+    // Just add Firebase save
+    setTimeout(() => {
+        saveNamesToFirebase();
+    }, 100);
+});
+
+resetBtn.addEventListener('click', () => {
+    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตคะแนนทั้งหมด?')) {
+        // Reset Firebase
+        if (firebaseInitialized && typeof database !== 'undefined') {
+            database.ref('scores').remove();
+        }
+        // Reset localStorage
+        localStorage.removeItem('gameScores');
+        localStorage.removeItem('totalScores');
+        localStorage.removeItem('playerTotalScores');
+        localStorage.removeItem('gameScoresData');
+    }
+});
+
+// Initialize Firebase sync after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            initFirebaseSync();
+            loadFromFirebase();
+        }, 500);
+    });
+} else {
+    setTimeout(() => {
+        initFirebaseSync();
+        loadFromFirebase();
+    }, 500);
+}
+
+// Fallback: Load from localStorage on page load
 loadFromLocalStorage();
 
 // Rebuild history from saved scores

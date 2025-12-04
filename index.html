@@ -11,6 +11,10 @@
         <header>
             <h1>🎮 บันทึกคะแนนเกม</h1>
             <p class="subtitle">4 ทีม (ทีมละ 10-15 คน) × 3 เกม</p>
+            <div id="sync-status" class="sync-status" style="display: none;">
+                <span id="sync-indicator">🔄</span>
+                <span id="sync-text">กำลัง sync...</span>
+            </div>
             <button id="edit-names-btn" class="edit-names-btn">✏️ กรอก/แก้ไขชื่อเล่น</button>
         </header>
 
@@ -97,6 +101,13 @@
         <button id="reset-btn" class="reset-btn">รีเซ็ตทั้งหมด</button>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- Firebase Config -->
+    <script src="firebase-config.js"></script>
+    
     <script src="script.js"></script>
 </body>
 </html>
