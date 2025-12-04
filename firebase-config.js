@@ -4,20 +4,19 @@
 // หลังจาก setup Firebase แล้ว ให้แทนที่ config ด้านล่างด้วย config จาก Firebase Console
 
 const firebaseConfig = {
-    // ⚠️ แก้ไข config นี้ด้วยข้อมูลจาก Firebase Console
-    // ดูวิธี setup ในไฟล์ FIREBASE_SETUP.md
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://score-system-sync-default-rtdb.asia-southeast1.firebasedatabase.app/",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCvAXSjCMOFT2anmd-dqkuIK9Y0azB3BQA",
+    authDomain: "score-system-sync.firebaseapp.com",
+    databaseURL: "https://score-system-sync-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "score-system-sync",
+    storageBucket: "score-system-sync.appspot.com",
+    messagingSenderId: "473799846032",
+    appId: "1:473799846032:web:bfe9eb10d4970d85bad015",
+    measurementId: "G-K57VQV2C8Z"
 };
 
 // Initialize Firebase (จะทำงานถ้า config ถูกต้อง)
 try {
-    if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
         firebase.initializeApp(firebaseConfig);
         window.database = firebase.database();
         console.log('✅ Firebase initialized successfully!');
