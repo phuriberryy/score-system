@@ -1402,57 +1402,80 @@ header h1 {
         font-size: 1em;
     }
 
+    .scoreboard {
+        padding: 22px 18px 20px;
+        border-radius: 20px;
+    }
+
     .scoreboard h2 {
-        font-size: 1.5em;
+        font-size: 1.45em;
+    }
+
+    .teams-display {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 6px 2px;
     }
 
     .team-card {
         min-height: auto;
         flex-direction: column;
-        text-align: center;
-        gap: 15px;
+        text-align: left;
+        gap: 10px;
+        padding: 16px 14px 18px;
     }
 
     .team-left {
-        flex-direction: column;
+        flex-direction: row;
+        align-items: flex-start;
         width: 100%;
     }
 
     .team-score {
-        width: 100%;
-        position: relative;
-        top: auto;
-        right: auto;
-    }
-
-    .teams-display {
-        grid-template-columns: 1fr;
+        position: static;
+        width: auto;
+        margin-left: auto;
+        padding: 10px 16px;
+        min-width: 100px;
     }
 
     .leader-indicator {
-        font-size: 1em;
-        padding: 12px;
+        font-size: 0.95em;
+        padding: 10px 14px;
+        max-width: 100%;
     }
 
     .team-rank {
-        font-size: 1.5em;
-        min-width: 40px;
+        font-size: 1.6em;
+        min-width: 46px;
     }
 
     .team-card.rank-1 .team-rank {
-        font-size: 1.8em;
+        font-size: 1.9em;
     }
 
     .team-score-value {
-        font-size: 1.8em;
+        font-size: 1.7em;
     }
 
     .team-card.rank-1 .team-score-value {
-        font-size: 2.2em;
+        font-size: 2em;
+    }
+
+    .team-players-scores {
+        max-height: 220px;
+    }
+
+    .player-score-item {
+        padding: 8px;
     }
 }
 
 @media (max-width: 480px) {
+    body {
+        padding: 8px;
+    }
+
     header h1 {
         font-size: 1.5em;
     }
@@ -1462,7 +1485,39 @@ header h1 {
     .team-selector-section,
     .history-section,
     .game-summary-section {
-        padding: 15px;
+        padding: 14px;
+        border-radius: 16px;
+    }
+
+    .leader-indicator {
+        border-radius: 40px;
+        padding: 9px 12px;
+    }
+
+    .team-left {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .team-score {
+        align-self: stretch;
+        margin-top: 6px;
+    }
+
+    .team-score-value {
+        font-size: 1.6em;
+    }
+
+    .team-card.rank-1 .team-score-value {
+        font-size: 1.9em;
+    }
+
+    .player-name {
+        font-size: 0.9em;
+    }
+
+    .player-total-score {
+        font-size: 0.85em;
     }
 
     .team-buttons {
