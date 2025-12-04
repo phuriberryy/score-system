@@ -222,9 +222,9 @@ function updateScoreDisplay() {
         if (rank === 1 && team.score > 0) {
             statusText = '👑 นำ';
         } else if (rank === 2 && team.score > 0) {
-            statusText = '🥈 อันดับ 2';
+            statusText = 'อันดับ 2';
         } else if (rank === 3 && team.score > 0) {
-            statusText = '🥉 อันดับ 3';
+            statusText = 'อันดับ 3';
         }
         
         // Create individual scores display - show all players with names
@@ -250,28 +250,28 @@ function updateScoreDisplay() {
         
         // Sort players by score (highest first)
         playersWithNames.sort((a, b) => b.score - a.score);
+        const topScore = playersWithNames.length ? playersWithNames[0].score : 0;
         
         // Create individual scores display with game breakdown
         let individualScores = '';
         if (playersWithNames.length > 0) {
             individualScores = playersWithNames.map((p, index) => {
                 const gameScoresStr = p.gameScores.map((gs, gi) => 
-                    `<span class="game-score-badge">เกม${gi + 1}: ${gs}</span>`
+                    `<span class="member-game-pill">เกม ${gi + 1}: ${gs}</span>`
                 ).join('');
-                const isTopPlayer = index === 0 && p.score > 0;
+                const isTopPlayer = index === 0 && p.score > 0 && p.score === topScore;
                 return `
-                    <div class="player-score-item ${p.score > 0 ? 'has-score' : ''} ${isTopPlayer ? 'top-player' : ''}">
-                        ${isTopPlayer ? '<span class="top-player-badge">🏆</span>' : ''}
-                        <div class="player-name-score">
-                            <span class="player-name">${p.name}</span>
-                            <span class="player-total-score">รวม: ${p.score}</span>
+                    <div class="member-card ${isTopPlayer ? 'top-player' : ''}">
+                        <div class="member-card-header">
+                            <span class="member-name">${p.name}</span>
+                            <span class="member-total">รวม: ${p.score}${isTopPlayer ? ' 🏆' : ''}</span>
                         </div>
-                        <div class="player-game-scores">${gameScoresStr}</div>
+                        <div class="member-game-badges">${gameScoresStr}</div>
                     </div>
                 `;
             }).join('');
         } else {
-            individualScores = '<div class="player-score-item" style="opacity:0.6;">ยังไม่มีชื่อเล่น</div>';
+            individualScores = '<div class="member-card" style="opacity:0.6;">ยังไม่มีชื่อเล่น</div>';
         }
         
         // Get game scores for this team
@@ -280,25 +280,25 @@ function updateScoreDisplay() {
             teamGameScores.push(gameScores[gameIdx][team.index] || 0);
         }
         const gameScoresDisplay = teamGameScores.map((gs, gi) => 
-            `<span class="team-game-score">เกม${gi + 1}: ${gs}</span>`
+            `<span class="team-game-pill">เกม ${gi + 1}: ${gs}</span>`
         ).join('');
         
         teamCard.innerHTML = `
-            <div class="team-left">
-                <div class="team-rank">${rank}</div>
-                <div class="team-info">
-                    <div class="team-name">${teamNames[team.index] || `ทีม ${team.teamNumber}`}</div>
-                    ${statusText ? `<div class="team-status">${statusText}</div>` : ''}
-                    <div class="team-game-scores-summary">${gameScoresDisplay}</div>
+            <div class="team-name-top">
+                <div class="team-name">${teamNames[team.index] || `ทีม ${team.teamNumber}`}</div>
+                ${statusText ? `<div class="team-status">${statusText}</div>` : ''}
+            </div>
+            <div class="team-card-header">
+                <div class="rank-badge">${rank}</div>
+                <div class="team-total-box">
+                    <div class="total-label">รวมทั้ง 3 เกม</div>
+                    <div class="total-score">${team.score}</div>
                 </div>
             </div>
-            <div class="team-score">
-                <div class="team-score-label">รวมทั้ง 3 เกม</div>
-                <div class="team-score-value">${team.score}</div>
-            </div>
-            <div class="team-players-scores">
-                <div class="players-scores-header">คะแนนเดี่ยวของสมาชิก:</div>
-                <div class="players-scores-list">${individualScores}</div>
+            <div class="team-game-badges">${gameScoresDisplay}</div>
+            <div class="member-section">
+                <div class="member-section-title">คะแนนเดี่ยวของสมาชิก:</div>
+                <div class="member-list">${individualScores}</div>
             </div>
         `;
         
