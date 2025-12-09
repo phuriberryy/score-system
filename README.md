@@ -16,11 +16,6 @@
 - `firebase-config.js` — ใส่ Firebase config และ initialize database (ต้องตั้งค่าเอง)
 - `FIREBASE_SETUP.md` — คู่มือตั้งค่า Firebase Realtime Database และ rules
 
-## การตั้งค่า Firebase (สรุปสั้น)
-1. สร้างโปรเจกต์และ Realtime Database (โหมดทดสอบ) ตาม `FIREBASE_SETUP.md`
-2. คัดลอก web app config จาก Firebase Console แล้ววางใน `firebase-config.js` (แทนค่าที่ให้มาในไฟล์)
-3. ตรวจสอบ rules เปิดอ่าน/เขียน (หรือปรับให้ secure ตามต้องการ)
-
 ## วิธีใช้งาน
 1. เปิด `index.html` ในเบราว์เซอร์ (สามารถเปิดหลายเบราว์เซอร์/อุปกรณ์เพื่อทดสอบซิงก์)
 2. คลิก “✏️ กรอก/แก้ไขชื่อเล่น” เพื่อกรอกชื่อทีมและผู้เล่น
