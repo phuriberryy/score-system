@@ -1,7 +1,3 @@
-// Firebase Configuration
-// ⚠️ ต้อง Setup Firebase Project ก่อน! ดูคำแนะนำในไฟล์ FIREBASE_SETUP.md
-// 
-// หลังจาก setup Firebase แล้ว ให้แทนที่ config ด้านล่างด้วย config จาก Firebase Console
 
 const firebaseConfig = {
     apiKey: "AIzaSyCvAXSjCMOFT2anmd-dqkuIK9Y0azB3BQA",

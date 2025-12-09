@@ -39,6 +39,7 @@ let playerNamesSet = false;
 
 // Current selected team for score input (null = all teams, 0-3 = specific team)
 let currentSelectedTeam = null;
+let submitLock = false; // ป้องกันการกดซ้ำซ้อนตอนบันทึกคะแนน
 
 // Initialize DOM elements
 const playerNamesModal = document.getElementById('player-names-modal');
@@ -117,15 +118,18 @@ function initializeTeamInputs() {
     
     // Add event listeners to calculate team total in real-time
     setTimeout(() => {
-        document.querySelectorAll('.player-score-input').forEach(input => {
-            // Remove existing listeners first
-            const newInput = input.cloneNode(true);
-            input.parentNode.replaceChild(newInput, input);
-            // Add new listener
-            newInput.addEventListener('input', calculateTeamTotals);
-            newInput.addEventListener('change', calculateTeamTotals);
-        });
+        attachScoreInputListeners();
     }, 10);
+}
+
+function refreshTeamButtons() {
+    document.querySelectorAll('.team-select-btn').forEach(btn => {
+        const teamIndex = parseInt(btn.getAttribute('data-team'));
+        const labelSpan = btn.querySelector('.team-btn-label');
+        if (!isNaN(teamIndex) && labelSpan) {
+            labelSpan.textContent = teamNames[teamIndex] || `ทีม ${teamIndex + 1}`;
+        }
+    });
 }
 
 // Add team input section
@@ -169,6 +173,41 @@ function addTeamInputSection(teamIndex) {
         </div>
     `;
     teamsInputContainer.appendChild(teamInputSection);
+}
+
+// Clamp/clean input และเชื่อมกับการคำนวณผลรวม
+function attachScoreInputListeners() {
+    document.querySelectorAll('.player-score-input').forEach(input => {
+        const newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        const handleInput = () => {
+            sanitizeScoreField(newInput);
+            calculateTeamTotals();
+        };
+        newInput.addEventListener('input', handleInput);
+        newInput.addEventListener('change', handleInput);
+    });
+}
+
+// แปลงค่าสกอร์ให้เป็นจำนวนเต็มไม่ติดลบ
+function sanitizeScoreField(inputEl) {
+    if (!inputEl) return;
+    const raw = inputEl.value;
+    if (raw === '') return; // อนุญาตว่างเพื่อให้ผู้ใช้พิมพ์ต่อ
+    const num = Math.max(0, Math.floor(Number(raw) || 0));
+    inputEl.value = num;
+}
+
+function sanitizeScoreValue(raw) {
+    if (raw === '' || raw === null || raw === undefined) return 0;
+    return Math.max(0, Math.floor(Number(raw) || 0));
+}
+
+function hasNamedPlayers(teamIndex) {
+    for (let i = 0; i < NUM_PLAYERS_PER_TEAM; i++) {
+        if (playerNames[teamIndex][i] && playerNames[teamIndex][i].trim() !== '') return true;
+    }
+    return false;
 }
 
 // Calculate team totals from individual scores
@@ -222,9 +261,9 @@ function updateScoreDisplay() {
         if (rank === 1 && team.score > 0) {
             statusText = '👑 นำ';
         } else if (rank === 2 && team.score > 0) {
-            statusText = 'อันดับ 2';
+            statusText = '🥈 อันดับ 2';
         } else if (rank === 3 && team.score > 0) {
-            statusText = 'อันดับ 3';
+            statusText = '🥉 อันดับ 3';
         }
         
         // Create individual scores display - show all players with names
@@ -250,28 +289,28 @@ function updateScoreDisplay() {
         
         // Sort players by score (highest first)
         playersWithNames.sort((a, b) => b.score - a.score);
-        const topScore = playersWithNames.length ? playersWithNames[0].score : 0;
         
         // Create individual scores display with game breakdown
         let individualScores = '';
         if (playersWithNames.length > 0) {
             individualScores = playersWithNames.map((p, index) => {
                 const gameScoresStr = p.gameScores.map((gs, gi) => 
-                    `<span class="member-game-pill">เกม ${gi + 1}: ${gs}</span>`
+                    `<span class="game-score-badge">เกม${gi + 1}: ${gs}</span>`
                 ).join('');
-                const isTopPlayer = index === 0 && p.score > 0 && p.score === topScore;
+                const isTopPlayer = index === 0 && p.score > 0;
                 return `
-                    <div class="member-card ${isTopPlayer ? 'top-player' : ''}">
-                        <div class="member-card-header">
-                            <span class="member-name">${p.name}</span>
-                            <span class="member-total">รวม: ${p.score}${isTopPlayer ? ' 🏆' : ''}</span>
+                    <div class="player-score-item ${p.score > 0 ? 'has-score' : ''} ${isTopPlayer ? 'top-player' : ''}">
+                        ${isTopPlayer ? '<span class="top-player-badge">🏆</span>' : ''}
+                        <div class="player-name-score">
+                            <span class="player-name">${p.name}</span>
+                            <span class="player-total-score">รวม: ${p.score}</span>
                         </div>
-                        <div class="member-game-badges">${gameScoresStr}</div>
+                        <div class="player-game-scores">${gameScoresStr}</div>
                     </div>
                 `;
             }).join('');
         } else {
-            individualScores = '<div class="member-card" style="opacity:0.6;">ยังไม่มีชื่อเล่น</div>';
+            individualScores = '<div class="player-score-item" style="opacity:0.6;">ยังไม่มีชื่อเล่น</div>';
         }
         
         // Get game scores for this team
@@ -280,25 +319,25 @@ function updateScoreDisplay() {
             teamGameScores.push(gameScores[gameIdx][team.index] || 0);
         }
         const gameScoresDisplay = teamGameScores.map((gs, gi) => 
-            `<span class="team-game-pill">เกม ${gi + 1}: ${gs}</span>`
+            `<span class="team-game-score">เกม${gi + 1}: ${gs}</span>`
         ).join('');
         
         teamCard.innerHTML = `
-            <div class="team-name-top">
-                <div class="team-name">${teamNames[team.index] || `ทีม ${team.teamNumber}`}</div>
-                ${statusText ? `<div class="team-status">${statusText}</div>` : ''}
-            </div>
-            <div class="team-card-header">
-                <div class="rank-badge">${rank}</div>
-                <div class="team-total-box">
-                    <div class="total-label">รวมทั้ง 3 เกม</div>
-                    <div class="total-score">${team.score}</div>
+            <div class="team-left">
+                <div class="team-rank">${rank}</div>
+                <div class="team-info">
+                    <div class="team-name">${teamNames[team.index] || `ทีม ${team.teamNumber}`}</div>
+                    ${statusText ? `<div class="team-status">${statusText}</div>` : ''}
+                    <div class="team-game-scores-summary">${gameScoresDisplay}</div>
                 </div>
             </div>
-            <div class="team-game-badges">${gameScoresDisplay}</div>
-            <div class="member-section">
-                <div class="member-section-title">คะแนนเดี่ยวของสมาชิก:</div>
-                <div class="member-list">${individualScores}</div>
+            <div class="team-score">
+                <div class="team-score-label">รวมทั้ง 3 เกม</div>
+                <div class="team-score-value">${team.score}</div>
+            </div>
+            <div class="team-players-scores">
+                <div class="players-scores-header">คะแนนเดี่ยวของสมาชิก:</div>
+                <div class="players-scores-list">${individualScores}</div>
             </div>
         `;
         
@@ -511,19 +550,24 @@ submitBtn.addEventListener('click', () => {
         playerNamesModal.style.display = 'flex';
         return;
     }
+    if (submitLock) return;
     
     const game = parseInt(gameSelect.value);
     
     // Validate scores (เฉพาะเช็คว่าต้องเป็นเลขไม่ติดลบ) สำหรับทีมที่เลือก
     if (currentSelectedTeam !== null) {
         const teamIndex = currentSelectedTeam;
+        if (!hasNamedPlayers(teamIndex)) {
+            alert('ทีมนี้ยังไม่มีชื่อผู้เล่น กรุณากรอกก่อน');
+            return;
+        }
         let teamTotal = 0;
         
         for (let playerIndex = 0; playerIndex < NUM_PLAYERS_PER_TEAM; playerIndex++) {
             if (playerNames[teamIndex][playerIndex] && playerNames[teamIndex][playerIndex].trim() !== '') {
                 const input = document.getElementById(`team-${teamIndex}-player-${playerIndex}`);
                 if (input) {
-                    const value = parseInt(input.value) || 0;
+                    const value = sanitizeScoreValue(input.value);
                     if (value < 0) {
                         alert(`⚠️ คะแนนของ ${playerNames[teamIndex][playerIndex]} ต้องไม่ติดลบ`);
                         return;
@@ -535,6 +579,9 @@ submitBtn.addEventListener('click', () => {
         
         // ไม่ต้องเช็คเพดานคะแนนรวมแล้ว
     }
+    
+    submitLock = true;
+    submitBtn.disabled = true;
     
     // Prepare scores update: start from existing scores to avoid clearing other teams
     const teamPlayerScores = scores[game].map(teamScores => [...teamScores]);
@@ -548,7 +595,7 @@ submitBtn.addEventListener('click', () => {
             if (playerNames[teamIndex][playerIndex] && playerNames[teamIndex][playerIndex].trim() !== '') {
                 const input = document.getElementById(`team-${teamIndex}-player-${playerIndex}`);
                 if (input) {
-                    const value = parseInt(input.value) || 0;
+                    const value = sanitizeScoreValue(input.value);
                     teamScores[playerIndex] = Math.max(0, value); // Ensure non-negative
                 }
             }
@@ -562,7 +609,7 @@ submitBtn.addEventListener('click', () => {
                 if (playerNames[teamIndex][playerIndex] && playerNames[teamIndex][playerIndex].trim() !== '') {
                     const input = document.getElementById(`team-${teamIndex}-player-${playerIndex}`);
                     if (input) {
-                        const value = parseInt(input.value) || 0;
+                        const value = sanitizeScoreValue(input.value);
                         teamScores[playerIndex] = Math.max(0, value); // Ensure non-negative
                     }
                 }
@@ -616,6 +663,8 @@ submitBtn.addEventListener('click', () => {
     // Show success message
     submitBtn.textContent = '✓ บันทึกสำเร็จ!';
     submitBtn.style.background = '#27ae60';
+    submitBtn.disabled = false;
+    submitLock = false;
     setTimeout(() => {
         submitBtn.textContent = 'บันทึกคะแนน';
         submitBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
@@ -685,13 +734,7 @@ saveNamesBtn.addEventListener('click', () => {
     saveNamesToFirebase(); // Sync to Firebase
     
     // อัปเดตปุ่มเลือกทีมให้ใช้ชื่อทีมใหม่
-    document.querySelectorAll('.team-select-btn').forEach(btn => {
-        const teamIndex = parseInt(btn.getAttribute('data-team'));
-        const labelSpan = btn.querySelector('.team-btn-label');
-        if (labelSpan && !isNaN(teamIndex)) {
-            labelSpan.textContent = teamNames[teamIndex] || `ทีม ${teamIndex + 1}`;
-        }
-    });
+    refreshTeamButtons();
     
     // If team is already selected, initialize inputs
     if (currentSelectedTeam !== null) {
@@ -851,6 +894,7 @@ function initFirebaseSync() {
     // Listen for real-time changes
     const scoresRef = database.ref('scores');
     const namesRef = database.ref('playerNames');
+    const teamNamesRef = database.ref('teamNames');
     
     // Listen to scores changes
     scoresRef.on('value', (snapshot) => {
@@ -880,12 +924,12 @@ function initFirebaseSync() {
             playerTotalScores = data.playerTotalScores || playerTotalScores;
             historyData = data.historyData || historyData;
             teamNames = data.teamNames || teamNames;
-            teamNames = data.teamNames || teamNames;
             
             calculateTotalScores();
             updateScoreDisplay();
             updateGameSummary();
             rebuildHistory();
+            refreshTeamButtons();
             
             // Reload current scores if not typing
             if (currentSelectedTeam !== null && Object.keys(currentInputValues).length === 0) {
@@ -921,6 +965,18 @@ function initFirebaseSync() {
                 loadCurrentScores();
             }
             updateScoreDisplay();
+        }
+    });
+    
+    // Listen to team name changes
+    teamNamesRef.on('value', (snapshot) => {
+        if (!syncEnabled) return;
+        const data = snapshot.val();
+        if (data) {
+            teamNames = data;
+            refreshTeamButtons();
+            updateScoreDisplay();
+            updateGameSummary();
         }
     });
 }
@@ -966,7 +1022,10 @@ function saveNamesToFirebase() {
     
     syncEnabled = false;
     
-    database.ref('playerNames').set(playerNames).then(() => {
+    Promise.all([
+        database.ref('playerNames').set(playerNames),
+        database.ref('teamNames').set(teamNames)
+    ]).then(() => {
         syncEnabled = true;
         saveToLocalStorage();
     }).catch((error) => {
@@ -991,10 +1050,12 @@ function loadFromFirebase() {
             gameScores = data.gameScores || gameScores;
             playerTotalScores = data.playerTotalScores || playerTotalScores;
             historyData = data.historyData || historyData;
+            teamNames = data.teamNames || teamNames;
             calculateTotalScores();
             updateScoreDisplay();
             updateGameSummary();
             rebuildHistory();
+            refreshTeamButtons();
         } else {
             loadFromLocalStorage(); // Fallback
         }
@@ -1022,6 +1083,31 @@ function loadFromFirebase() {
         }
     }).catch(() => {
         loadFromLocalStorage();
+    });
+    
+    database.ref('teamNames').once('value').then((snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            teamNames = data;
+            refreshTeamButtons();
+            updateScoreDisplay();
+            updateGameSummary();
+        } else {
+            const savedTeamNamesLS = localStorage.getItem('teamNames');
+            if (savedTeamNamesLS) {
+                try {
+                    const parsedTeamNames = JSON.parse(savedTeamNamesLS);
+                    if (Array.isArray(parsedTeamNames) && parsedTeamNames.length === NUM_TEAMS) {
+                        teamNames = parsedTeamNames;
+                        refreshTeamButtons();
+                    }
+                } catch (e) {
+                    // ignore parse errors
+                }
+            }
+        }
+    }).catch(() => {
+        // ignore, localStorage fallback covers
     });
 }
 
@@ -1099,6 +1185,7 @@ if (playerNamesSet) {
     updateMaxScoreDisplay();
     initializeTeamInputs();
 }
+refreshTeamButtons();
 updateScoreDisplay();
 updateGameSummary();
 if (playerNamesSet) {
@@ -1176,6 +1263,7 @@ function loadFromLocalStorage() {
         }
     }
     
+    refreshTeamButtons();
     calculateTotalScores();
     rebuildHistory();
 }
