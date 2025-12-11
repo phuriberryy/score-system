@@ -1,6 +1,6 @@
 // Configuration
 const NUM_TEAMS = 4;
-const NUM_PLAYERS_PER_TEAM = 15; // จำนวนสมาชิกต่อทีม (รองรับ 10-15 คน)
+const NUM_PLAYERS_PER_TEAM = 15; // จำนวนสมาชิกต่อทีม 
 const NUM_GAMES = 3; // จำนวนเกม
 
 // Team names & Player names
@@ -815,6 +815,11 @@ if (savedSelectedTeam !== null) {
     if (btn) {
         btn.click();
     }
+}
+// ถ้าไม่มีทีมถูกเลือก ให้แสดงส่วนกรอกคะแนนพร้อมข้อความบอกให้เลือกทีม
+if (currentSelectedTeam === null && scoreInputSection) {
+    scoreInputSection.style.display = 'block';
+    selectedTeamIndicator.innerHTML = 'เลือกทีมด้านบนเพื่อเริ่มกรอกคะแนน';
 }
 
 // Load scores when game changes

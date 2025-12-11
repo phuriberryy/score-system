@@ -493,9 +493,9 @@ header h1 {
 
 .top-player-badge {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    font-size: 1.2em;
+    top: 4px;
+    right: 6px;
+    font-size: 0.95em; /* ลดขนาดถ้วยรางวัลไม่ให้บังตัวเลข */
     z-index: 1;
 }
 
