@@ -48,7 +48,6 @@ const saveNamesBtn = document.getElementById('save-names-btn');
 const gameSelect = document.getElementById('game-select');
 const teamsInputContainer = document.getElementById('teams-input-container');
 const submitBtn = document.getElementById('submit-scores');
-const resetBtn = document.getElementById('reset-btn');
 const teamsDisplay = document.getElementById('teams-display');
 const leaderIndicator = document.getElementById('leader-indicator');
 const historyContainer = document.getElementById('score-history');
@@ -744,42 +743,6 @@ saveNamesBtn.addEventListener('click', () => {
     
     // Update scoreboard to show new names
     updateScoreDisplay();
-});
-
-// Reset all scores
-resetBtn.addEventListener('click', () => {
-    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตคะแนนทั้งหมด?')) {
-        // Reset in-memory data
-        scores = Array(NUM_GAMES).fill(null).map(() => 
-            Array(NUM_TEAMS).fill(null).map(() => 
-                Array(NUM_PLAYERS_PER_TEAM).fill(0)
-            )
-        );
-        totalScores = [0, 0, 0, 0];
-        playerTotalScores = Array(NUM_TEAMS).fill(null).map(() => 
-            Array(NUM_PLAYERS_PER_TEAM).fill(0)
-        );
-        gameScores = Array(NUM_GAMES).fill(null).map(() => [0, 0, 0, 0]);
-        
-        // Reset history data and UI
-        historyData = [];
-        calculateTotalScores();
-        historyContainer.innerHTML = '';
-        loadCurrentScores();
-        updateGameSummary();
-        updateScoreDisplay();
-        
-        // Reset Firebase
-        if (firebaseInitialized && typeof database !== 'undefined') {
-            database.ref('scores').remove();
-        }
-        // Reset localStorage
-        localStorage.removeItem('gameScores');
-        localStorage.removeItem('totalScores');
-        localStorage.removeItem('playerTotalScores');
-        localStorage.removeItem('gameScoresData');
-        localStorage.removeItem('historyData');
-    }
 });
 
 // Team selector buttons

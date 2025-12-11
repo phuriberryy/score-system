@@ -1277,31 +1277,21 @@ header h1 {
 
 /* History Section */
 .history-section {
-    background: #ffffff;
-    border: 1px solid #e1e8ed;
-    border-radius: 20px;
-    padding: 30px;
-    margin-bottom: 25px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    display: none; /* ซ่อนประวัติคะแนนตามคำขอ */
 }
 
 @media (max-width: 768px) {
     .history-section {
-        padding: 20px;
+        display: none;
     }
 }
 
 .history-section h2 {
-    margin-bottom: 25px;
-    color: #2c3e50;
-    font-size: 1.8em;
-    font-weight: 700;
-    text-align: center;
+    display: none;
 }
 
 .history-container {
-    max-height: 400px;
-    overflow-y: auto;
+    display: none;
 }
 
 .history-item {
@@ -1376,27 +1366,6 @@ header h1 {
     color: #4a90e2;
     margin-top: 5px;
     display: block;
-}
-
-/* Reset Button */
-.reset-btn {
-    width: 100%;
-    padding: 15px;
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1.1em;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-    transition: all 0.3s ease;
-}
-
-.reset-btn:hover {
-    background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
-    box-shadow: 0 6px 16px rgba(231, 76, 60, 0.4);
-    transform: translateY(-2px);
 }
 
 /* Scrollbar Styling */
